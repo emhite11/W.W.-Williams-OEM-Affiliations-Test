@@ -4,489 +4,259 @@
 <meta charset="utf-8" />
 <title>OEM Map</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
-html, body { margin:0; height:100%; font-family: Arial; }
-#map { height:100%; background:#e6e6e6; }
+html, body {
+  margin:0;
+  height:100%;
+  font-family: Arial;
+}
+
+#map {
+  height: calc(100% - 70px);
+  margin-top: 70px;
+  background:#e6e6e6;
+}
+
+#oemHeader {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:70px;
+  background:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  z-index:1000;
+}
+
+#oemLogoHeader {
+  height:36px;
+}
 
 .controls {
   position:absolute;
-  top:10px;
+  top:90px;
   left:10px;
   background:white;
   padding:12px;
   border-radius:10px;
   box-shadow:0 4px 12px rgba(0,0,0,0.2);
   z-index:1000;
-  width:240px;
+  width:220px;
 }
 
-select { width:100%; margin-top:6px; padding:6px; }
+select {
+  width:100%;
+  margin-top:6px;
+  padding:6px;
+}
 
-.legend { margin-top:10px; font-size:12px; }
-.legend div { margin-top:4px; }
-.dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
-.hollow { border:2px solid black; background:transparent; }
+.legend {
+  margin-top:10px;
+  font-size:12px;
+}
 </style>
 </head>
+
 <body>
+
+<div id="oemHeader">
+  <img id="oemLogoHeader" src="">
+</div>
 
 <div id="map"></div>
 
 <div class="controls">
   <strong>Select OEM</strong>
   <select id="oemSelect" onchange="updateMap()">
- <option value="Allison Transmission">Allison Transmission</option>
-    <option value="mtu">mtu</option>
-    <option value="Volvo Penta">Volvo Penta</option>
-    <option value="Deutz">Deutz</option>
-    <option value="John Deere">John Deere</option>
-    <option value="Yanmar">Yanmar</option>
-    <option value="Northern Lights">Northern Lights</option>
-    <option value="Workhorse">Workhorse</option>
-    <option value="Daimler Coach North America">Daimler Coach North America</option>
-    <option value="Blue Star">Blue Star</option>
-    <option value="Briggs &amp; Stratton">Briggs &amp; Stratton</option>
-    <option value="Kohler">Kohler</option>
-    <option value="Red Dot">Red Dot</option>
-    <option value="HIAB-WALTCO Liftgate">HIAB-WALTCO Liftgate</option>
-    <option value="Bus Climate Control">Bus Climate Control</option>
-
+    <option>Allison Transmission</option>
+    <option>mtu</option>
+    <option>Blue Star</option>
+    <option>Briggs & Stratton</option>
+    <option>Bus Climate Control</option>
+    <option>Daimler Coach North America</option>
+    <option>Deutz</option>
+    <option>Hiab-Waltco</option>
+    <option>John Deere</option>
+    <option>Kohler</option>
+    <option>Northern Lights</option>
+    <option>Red Dot</option>
+    <option>Volvo Penta</option>
+    <option>Workhorse</option>
+    <option>Yanmar</option>
   </select>
 
-  <img id="oemLogo" src="" alt="" style="width:100%; margin-top:10px; display:none;" />
-
-<div class="legend">
-  <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:50%;margin-right:6px;"></span>Dealer</div>
-  <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:0;margin-right:6px;"></span>Distributor</div>
-  <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:0;margin-right:6px;outline:2px solid black;outline-offset:2px;"></span>Dealer/Distributor</div>
-  <div><span style="display:inline-block;width:10px;height:10px;background:#aaa;border:1px solid black;border-radius:50%;margin-right:6px;"></span>Service Provider / Other</div>
+  <div class="legend">
+    Distributor / Dealer / Both
+  </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 
-  const oemLogos = {
-  "Allison Transmission": "logos/allison.png",
-  "mtu":                  "logos/mtu.png",
-  "Volvo Penta":          "logos/volvo-penta.png",
-  "Deutz":                "logos/deutz.png",
-  // ... etc for each OEM
+// ======================
+// LOGOS
+// ======================
+const oemLogos = {
+  "Allison Transmission": "logos/allison.jpg",
+  "Blue Star": "logos/blue-star.jpg",
+  "Briggs & Stratton": "logos/briggs-stratton.jpg",
+  "Bus Climate Control": "logos/bus-climate.jpg",
+  "Daimler Coach North America": "logos/daimler.jpg",
+  "Deutz": "logos/deutz.jpg",
+  "Hiab-Waltco": "logos/hiab.jpg",
+  "John Deere": "logos/john-deere.jpg",
+  "Kohler": "logos/kohler.jpg",
+  "mtu": "logos/mtu.jpg",
+  "Northern Lights": "logos/northern-lights.jpg",
+  "Red Dot": "logos/red-dot.jpg",
+  "Volvo Penta": "logos/volvo.jpg",
+  "Workhorse": "logos/workhorse.jpg",
+  "Yanmar": "logos/yanmar.jpg"
 };
 
-const map = L.map('map').setView([33, -95], 4);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
+function updateLogo(selectedOEM) {
+  const logo = document.getElementById("oemLogoHeader");
+  const src = oemLogos[selectedOEM];
+  if (src) logo.src = src;
+}
 
-const countyURL = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json";
-const stateURL = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json";
-const mexicoURL = "https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json";
+// ======================
+// MAP INIT
+// ======================
+const map = L.map('map').setView([39, -98], 4);
 
-// FIPS codes for US states used in county matching
-const stateFips = {
-  AL:"01", AZ:"04", CA:"06", GA:"13", IN:"18", KY:"21", MA:"25", ME:"23",
-  MI:"26", NV:"32", OH:"39", OR:"41", RI:"44", SC:"45", TN:"47", WA:"53"
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png')
+.addTo(map);
+
+// ======================
+// FIPS MAP (CRITICAL)
+// ======================
+const fipsMap = {
+  "Alabama":"01",
+  "Arizona":"04",
+  "Georgia":"13",
+  "Indiana":"18",
+  "Kentucky":"21",
+  "Michigan":"26",
+  "Nevada":"32",
+  "Ohio":"39",
+  "South Carolina":"45",
+  "Tennessee":"47"
 };
 
+// ======================
+// DATA (Allison + mtu)
+// ======================
 const data = [
-  // Allison Transmission
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Allison Transmission", role:"Distributor"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Allison Transmission", role:"Distributor"},
-  {city:"Youngstown",     state:"OH", stateLabel:"Ohio",             county:"Mahoning",   oem:"Allison Transmission", role:"Distributor"},
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"Allison Transmission", role:"Distributor"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Allison Transmission", role:"Distributor"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Allison Transmission", role:"Distributor"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"Allison Transmission", role:"Distributor"},
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Allison Transmission", role:"Distributor"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Allison Transmission", role:"Distributor"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Allison Transmission", role:"Distributor"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"Allison Transmission", role:"Distributor"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"Allison Transmission", role:"Distributor"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Allison Transmission", role:"Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Allison Transmission", role:"Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Allison Transmission", role:"Distributor"},
-  {city:"Portland",       state:"OR", stateLabel:"Oregon",           county:"Multnomah",  oem:"Allison Transmission", role:"Distributor"},
-  {city:"Seattle",        state:"WA", stateLabel:"Washington",       county:"King",       oem:"Allison Transmission", role:"Distributor"},
-  {city:"Oakland",        state:"CA", stateLabel:"California",       county:"Alameda",    oem:"Allison Transmission", role:"Distributor"},
-  {city:"Guadalajara",    state:"MX-JAL", stateLabel:"Jalisco",      county:null,         oem:"Allison Transmission", role:"Distributor"},
-  {city:"Mexico City",    state:"MX-CMX", stateLabel:"Ciudad de México", county:null,     oem:"Allison Transmission", role:"Distributor"},
-  {city:"Querétaro",      state:"MX-QUE", stateLabel:"Querétaro",   county:null,          oem:"Allison Transmission", role:"Distributor"},
+  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Cleveland", state:"Ohio", county:"Cuyahoga", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Youngstown", state:"Ohio", county:"Mahoning", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Toledo", state:"Ohio", county:"Lucas", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Dearborn", state:"Michigan", county:"Wayne", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Grand Rapids", state:"Michigan", county:"Kent", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Saginaw", state:"Michigan", county:"Saginaw", oem:"Allison Transmission", role:"Distributor"},
 
-  // mtu
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"mtu", role:"Distributor"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"mtu", role:"Distributor"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"mtu", role:"Distributor"},
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"mtu", role:"Distributor"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"mtu", role:"Distributor"},
-  {city:"Youngstown",     state:"OH", stateLabel:"Ohio",             county:"Mahoning",   oem:"mtu", role:"Distributor"},
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"mtu", role:"Distributor"},
-  {city:"Fort Wayne",     state:"IN", stateLabel:"Indiana",          county:"Allen",      oem:"mtu", role:"Distributor"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"mtu", role:"Distributor"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"mtu", role:"Distributor"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"mtu", role:"Distributor"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"mtu", role:"Distributor"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"mtu", role:"Distributor"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"mtu", role:"Distributor"},
-  {city:"Louisville",     state:"KY", stateLabel:"Kentucky",         county:"Jefferson",  oem:"mtu", role:"Distributor"},
-  {city:"Nashville",      state:"TN", stateLabel:"Tennessee",        county:"Davidson",   oem:"mtu", role:"Distributor"},
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"mtu", role:"Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"mtu", role:"Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"mtu", role:"Distributor"},
-  {city:"Guadalajara",    state:"MX-JAL", stateLabel:"Jalisco",      county:null,         oem:"mtu", role:"Distributor"},
-  {city:"Mexico City",    state:"MX-CMX", stateLabel:"Ciudad de México", county:null,     oem:"mtu", role:"Distributor"},
-  {city:"Cananea",        state:"MX-SON", stateLabel:"Sonora",       county:null,         oem:"mtu", role:"Distributor"},
-
-  // Volvo Penta
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Fort Wayne",     state:"IN", stateLabel:"Indiana",          county:"Allen",      oem:"Volvo Penta", role:"Dealer"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Volvo Penta", role:"Dealer"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Volvo Penta", role:"Dealer"},
-  {city:"Cartersville",   state:"GA", stateLabel:"Georgia",          county:"Bartow",     oem:"Volvo Penta", role:"Dealer"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Volvo Penta", role:"Dealer"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"Volvo Penta", role:"Dealer"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"Volvo Penta", role:"Dealer"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Volvo Penta", role:"Dealer"},
-  {city:"Ball Ground",    state:"GA", stateLabel:"Georgia",          county:"Cherokee",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Louisville",     state:"KY", stateLabel:"Kentucky",         county:"Jefferson",  oem:"Volvo Penta", role:"Dealer"},
-  {city:"Nashville",      state:"TN", stateLabel:"Tennessee",        county:"Davidson",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Volvo Penta", role:"Dealer"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Volvo Penta", role:"Dealer"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Volvo Penta", role:"Dealer"},
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Volvo Penta", role:"Dealer"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Volvo Penta", role:"Dealer"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Volvo Penta", role:"Dealer"},
-
-  // Deutz
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Deutz", role:"Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Deutz", role:"Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Deutz", role:"Distributor"},
-  {city:"Cartersville",   state:"GA", stateLabel:"Georgia",          county:"Bartow",     oem:"Deutz", role:"Distributor"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"Deutz", role:"Dealer"},
-  {city:"Nashville",      state:"TN", stateLabel:"Tennessee",        county:"Davidson",   oem:"Deutz", role:"Dealer"},
-  {city:"Louisville",     state:"KY", stateLabel:"Kentucky",         county:"Jefferson",  oem:"Deutz", role:"Dealer"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Deutz", role:"Dealer"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"Deutz", role:"Dealer"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Deutz", role:"Dealer"},
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Deutz", role:"Dealer"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Deutz", role:"Dealer"},
-  {city:"Youngstown",     state:"OH", stateLabel:"Ohio",             county:"Mahoning",   oem:"Deutz", role:"Dealer"},
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"Deutz", role:"Dealer"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Deutz", role:"Dealer"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Deutz", role:"Dealer"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"Deutz", role:"Dealer"},
-
-  // John Deere
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"John Deere", role:"Dealer"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"John Deere", role:"Dealer"},
-  {city:"Louisville",     state:"KY", stateLabel:"Kentucky",         county:"Jefferson",  oem:"John Deere", role:"Dealer"},
-  {city:"Nashville",      state:"TN", stateLabel:"Tennessee",        county:"Davidson",   oem:"John Deere", role:"Dealer"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"John Deere", role:"Dealer"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"John Deere", role:"Dealer"},
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"John Deere", role:"Dealer"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"John Deere", role:"Dealer"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"John Deere", role:"Dealer"},
-
-  // Yanmar
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Yanmar", role:"Dealer"},
-  {city:"Youngstown",     state:"OH", stateLabel:"Ohio",             county:"Mahoning",   oem:"Yanmar", role:"Dealer"},
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"Yanmar", role:"Dealer"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Yanmar", role:"Dealer"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Yanmar", role:"Dealer"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"Yanmar", role:"Dealer"},
-  {city:"Nashville",      state:"TN", stateLabel:"Tennessee",        county:"Davidson",   oem:"Yanmar", role:"Dealer"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Yanmar", role:"Dealer"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Yanmar", role:"Dealer"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Yanmar", role:"Dealer"},
-
-  // Northern Lights
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Northern Lights", role:"Dealer"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Northern Lights", role:"Dealer"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Northern Lights", role:"Dealer"},
-
-  // Workhorse
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Workhorse", role:"Service Provider"},
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Workhorse", role:"Service Provider"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Workhorse", role:"Service Provider"},
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Workhorse", role:"Service Provider"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Workhorse", role:"Service Provider"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Workhorse", role:"Service Provider"},
-  {city:"Oakland",        state:"CA", stateLabel:"California",       county:"Alameda",    oem:"Workhorse", role:"Service Provider"},
-
-  // Daimler Coach North America
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Daimler Coach North America", role:"Dealer/Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Daimler Coach North America", role:"Dealer/Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Daimler Coach North America", role:"Dealer/Distributor"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Daimler Coach North America", role:"Dealer/Distributor"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"Daimler Coach North America", role:"Dealer/Distributor"},
-
-  // Blue Star
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Blue Star", role:"Distributor"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Blue Star", role:"Distributor"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Blue Star", role:"Distributor"},
-
-  // Briggs & Stratton
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Briggs & Stratton", role:"Distributor"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Briggs & Stratton", role:"Distributor"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Briggs & Stratton", role:"Distributor"},
-
-  // Kohler
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Kohler", role:"Wholesale Partner"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Kohler", role:"Wholesale Partner"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Kohler", role:"Wholesale Partner"},
-
-  // Red Dot
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Red Dot", role:"Distributor"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Red Dot", role:"Distributor"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Red Dot", role:"Distributor"},
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Red Dot", role:"Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Red Dot", role:"Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Red Dot", role:"Distributor"},
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Red Dot", role:"Distributor"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Red Dot", role:"Distributor"},
-  {city:"Youngstown",     state:"OH", stateLabel:"Ohio",             county:"Mahoning",   oem:"Red Dot", role:"Distributor"},
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"Red Dot", role:"Distributor"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Red Dot", role:"Distributor"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Red Dot", role:"Distributor"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"Red Dot", role:"Distributor"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Red Dot", role:"Distributor"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Red Dot", role:"Distributor"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Red Dot", role:"Distributor"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"Red Dot", role:"Distributor"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"Red Dot", role:"Distributor"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"Red Dot", role:"Distributor"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Red Dot", role:"Distributor"},
-  {city:"Cartersville",   state:"GA", stateLabel:"Georgia",          county:"Bartow",     oem:"Red Dot", role:"Distributor"},
-  {city:"Portland",       state:"OR", stateLabel:"Oregon",           county:"Multnomah",  oem:"Red Dot", role:"Distributor"},
-  {city:"Seattle",        state:"WA", stateLabel:"Washington",       county:"King",       oem:"Red Dot", role:"Distributor"},
-  {city:"Oakland",        state:"CA", stateLabel:"California",       county:"Alameda",    oem:"Red Dot", role:"Distributor"},
-
-  // HIAB-WALTCO Liftgate
-  {city:"Toledo",         state:"OH", stateLabel:"Ohio",             county:"Lucas",      oem:"HIAB-WALTCO Liftgate", role:"Dealer/Distributor"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"HIAB-WALTCO Liftgate", role:"Dealer/Distributor"},
-
-  // Bus Climate Control
-  {city:"Phoenix",        state:"AZ", stateLabel:"Arizona",          county:"Maricopa",   oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Las Vegas",      state:"NV", stateLabel:"Nevada",           county:"Clark",      oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Tucson",         state:"AZ", stateLabel:"Arizona",          county:"Pima",       oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Dearborn",       state:"MI", stateLabel:"Michigan",         county:"Wayne",      oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Grand Rapids",   state:"MI", stateLabel:"Michigan",         county:"Kent",       oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Saginaw",        state:"MI", stateLabel:"Michigan",         county:"Saginaw",    oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Boston",         state:"MA", stateLabel:"Massachusetts",    county:"Middlesex",  oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Providence",     state:"RI", stateLabel:"Rhode Island",     county:"Providence", oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Portland",       state:"ME", stateLabel:"Maine",            county:"Cumberland", oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Atlanta",        state:"GA", stateLabel:"Georgia",          county:"Fulton",     oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Savannah",       state:"GA", stateLabel:"Georgia",          county:"Chatham",    oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Greer",          state:"SC", stateLabel:"South Carolina",   county:"Greenville", oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Columbia",       state:"SC", stateLabel:"South Carolina",   county:"Richland",   oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Birmingham",     state:"AL", stateLabel:"Alabama",          county:"Jefferson",  oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Montgomery",     state:"AL", stateLabel:"Alabama",          county:"Montgomery", oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Charleston",     state:"SC", stateLabel:"South Carolina",   county:"Charleston", oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Columbus",       state:"OH", stateLabel:"Ohio",             county:"Franklin",   oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Cleveland",      state:"OH", stateLabel:"Ohio",             county:"Cuyahoga",   oem:"Bus Climate Control", role:"Dealer/Distributor"},
-  {city:"Louisville",     state:"KY", stateLabel:"Kentucky",         county:"Jefferson",  oem:"Bus Climate Control", role:"Dealer/Distributor"},
+  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"mtu", role:"Distributor"},
+  {city:"Cleveland", state:"Ohio", county:"Cuyahoga", oem:"mtu", role:"Distributor"}
 ];
 
-const coords = {
-  Columbus:         [39.96, -83.00],
-  Cleveland:        [41.49, -81.69],
-  Youngstown:       [41.09, -80.64],
-  Toledo:           [41.65, -83.53],
-  Dearborn:         [42.32, -83.17],
-  "Grand Rapids":   [42.96, -85.66],
-  Saginaw:          [43.42, -83.95],
-  Atlanta:          [33.74, -84.38],
-  Savannah:         [32.08, -81.09],
-  Greer:            [34.94, -82.23],
-  Columbia:         [34.00, -81.03],
-  Birmingham:       [33.52, -86.81],
-  Montgomery:       [32.37, -86.30],
-  Charleston:       [32.78, -79.93],
-  Phoenix:          [33.44, -112.07],
-  "Las Vegas":      [36.17, -115.14],
-  Tucson:           [32.22, -110.97],
-  "Fort Wayne":     [41.07, -85.14],
-  Nashville:        [36.16, -86.78],
-  Louisville:       [38.25, -85.76],
-  Boston:           [42.36, -71.06],
-  Providence:       [41.82, -71.42],
-  Portland:         [43.66, -70.26],   // Maine
-  "Portland":       [45.52, -122.67],  // Oregon — handled by state below
-  Seattle:          [47.61, -122.33],
-  Oakland:          [37.80, -122.27],
-  Guadalajara:      [20.66, -103.35],
-  "Mexico City":    [19.43, -99.13],
-  "Querétaro":      [20.59, -100.39],
-  Cananea:          [30.99, -110.29],
-  Cartersville:     [34.17, -84.80],
-  "Ball Ground":    [34.34, -84.37],
-};
+// ======================
+// HELPERS
+// ======================
+function getActiveStates(oem) {
+  return [...new Set(data.filter(d => d.oem === oem).map(d => d.state))];
+}
 
-// Portland disambiguation: Maine vs Oregon
-function getCityCoords(city, state) {
-  if (city === "Portland") {
-    return state === "OR" ? [45.52, -122.67] : [43.66, -70.26];
+// ======================
+// STYLES
+// ======================
+function styleState(feature, selectedOEM) {
+  const activeStates = getActiveStates(selectedOEM);
+
+  if (activeStates.includes(feature.properties.name)) {
+    return {
+      fillColor:"#0060a9",
+      fillOpacity:0.18,
+      color:"#666",
+      weight:1
+    };
   }
-  return coords[city] || null;
-}
 
-let countyLayer, stateLayer, mexicoLayer;
-let markers = [];
-
-// US state full names for GeoJSON matching
-const stateFullName = {
-  OH:"Ohio", MI:"Michigan", GA:"Georgia", SC:"South Carolina", AL:"Alabama",
-  AZ:"Arizona", NV:"Nevada", TN:"Tennessee", KY:"Kentucky", IN:"Indiana",
-  MA:"Massachusetts", ME:"Maine", RI:"Rhode Island", OR:"Oregon", WA:"Washington", CA:"California"
-};
-
-// Mexico state names as they appear in the GeoJSON
-const mexicoStateNames = {
-  "MX-JAL": "Jalisco",
-  "MX-CMX": "Ciudad de México",
-  "MX-SON": "Sonora",
-  "MX-QUE": "Querétaro"
-};
-
-function getActiveUSStates(selectedOEM) {
-  return [...new Set(
-    data.filter(d => d.oem === selectedOEM && !d.state.startsWith("MX-"))
-        .map(d => stateFullName[d.state])
-        .filter(Boolean)
-  )];
-}
-
-function getActiveMexicoStates(selectedOEM) {
-  return [...new Set(
-    data.filter(d => d.oem === selectedOEM && d.state.startsWith("MX-"))
-        .map(d => mexicoStateNames[d.state])
-        .filter(Boolean)
-  )];
-}
-
-function styleUSState(feature, selectedOEM) {
-  const active = getActiveUSStates(selectedOEM);
-  const name = feature.properties.name || feature.properties.NAME;
-  if (active.includes(name)) {
-    return { fillColor:"#0060a9", fillOpacity:0.18, color:"#666", weight:1 };
-  }
   return { fillOpacity:0, color:"#bbb", weight:1 };
 }
 
-function getCountyStyle(feature, selectedOEM) {
-  const countyName = feature.properties.NAME;
-  const stateCode = feature.properties.STATE;
+function styleCounty(feature, selectedOEM) {
+  const county = feature.properties.NAME;
+  const state = feature.properties.STATE;
+
   const match = data.find(d =>
     d.oem === selectedOEM &&
-    d.county === countyName &&
-    stateFips[d.state] === stateCode
+    d.county === county &&
+    fipsMap[d.state] === state
   );
+
   if (match) {
-    return { fillColor:"#0060a9", fillOpacity:0.75, color:"#444", weight:0.5 };
+    return {
+      fillColor:"#1e2859",
+      fillOpacity:0.75,
+      color:"#444",
+      weight:0.5
+    };
   }
+
   return { fillOpacity:0, color:"#999", weight:0.5 };
 }
 
-function styleMexicoState(feature, selectedOEM) {
-  const active = getActiveMexicoStates(selectedOEM);
-  const name = feature.properties.name || feature.properties.NAME || feature.properties.state_name;
-  if (active.includes(name)) {
-    return { fillColor:"#0060a9", fillOpacity:0.18, color:"#666", weight:1 };
-  }
-  return { fillOpacity:0, color:"#bbb", weight:1 };
-}
-
-function drawMarkers(selectedOEM) {
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
-
-  // Deduplicate by city+state for this OEM (in case of duplicate rows)
-  const seen = new Set();
-  data.forEach(d => {
-    if (d.oem !== selectedOEM) return;
-    const key = `${d.city}|${d.state}`;
-    if (seen.has(key)) return;
-    seen.add(key);
-
-    const c = getCityCoords(d.city, d.state);
-    if (!c) return;
-
-    let iconHtml;
-    if (d.role === "Dealer") {
-      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:50%;box-sizing:border-box;"></div>`;
-    } else if (d.role === "Distributor") {
-      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:0;box-sizing:border-box;"></div>`;
-    } else if (d.role === "Dealer/Distributor") {
-      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:0;outline:2px solid #555;outline-offset:2px;box-sizing:border-box;"></div>`;
-    } else {
-      // Service Provider, Wholesale Partner, etc.
-      iconHtml = `<div style="width:12px;height:12px;background:#aaa;border:1.5px solid #555;border-radius:50%;box-sizing:border-box;"></div>`;
-    }
-
-    const icon = L.divIcon({ html: iconHtml, className: '', iconAnchor: [6, 6] });
-    const countyLabel = d.county ? `${d.county} County<br>` : "";
-    const marker = L.marker(c, { icon }).addTo(map);
-    marker.bindTooltip(`${d.city}, ${d.stateLabel}<br>${countyLabel}${d.oem}<br>${d.role}`);
-    markers.push(marker);
-  });
-}
+// ======================
+// LOAD MAP
+// ======================
+let countyLayer, stateLayer;
 
 async function loadMap() {
   const selectedOEM = document.getElementById('oemSelect').value;
 
-  try {
-    const [countyRes, stateRes, mexicoRes] = await Promise.all([
-      fetch(countyURL),
-      fetch(stateURL),
-      fetch(mexicoURL)
-    ]);
+  const [cRes, sRes] = await Promise.all([
+    fetch("https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"),
+    fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
+  ]);
 
-    const counties = await countyRes.json();
-    const states = await stateRes.json();
-    const mexico = await mexicoRes.json();
+  const counties = await cRes.json();
+  const states = await sRes.json();
 
-    if (countyLayer) map.removeLayer(countyLayer);
-    if (stateLayer)  map.removeLayer(stateLayer);
-    if (mexicoLayer) map.removeLayer(mexicoLayer);
+  if (countyLayer) map.removeLayer(countyLayer);
+  if (stateLayer) map.removeLayer(stateLayer);
 
-    stateLayer = L.geoJSON(states, {
-      style: f => styleUSState(f, selectedOEM)
-    }).addTo(map);
+  stateLayer = L.geoJSON(states, {
+    style: f => styleState(f, selectedOEM)
+  }).addTo(map);
 
-    countyLayer = L.geoJSON(counties, {
-      style: f => getCountyStyle(f, selectedOEM)
-    }).addTo(map);
-
-    mexicoLayer = L.geoJSON(mexico, {
-      style: f => styleMexicoState(f, selectedOEM)
-    }).addTo(map);
-
-    drawMarkers(selectedOEM);
-
-  } catch (err) {
-    console.error('Map load error:', err);
-    alert('Map failed to load external data. Try opening via a local server or internet connection.');
-  }
+  countyLayer = L.geoJSON(counties, {
+    style: f => styleCounty(f, selectedOEM)
+  }).addTo(map);
 }
 
+// ======================
+// UPDATE
+// ======================
 function updateMap() {
-  const selected = document.getElementById('oemSelect').value;
-  const logo = document.getElementById('oemLogo');
-  if (oemLogos[selected]) {
-    logo.src = oemLogos[selected];
-    logo.style.display = 'block';
-  } else {
-    logo.style.display = 'none';
-  }
+  const selectedOEM = document.getElementById('oemSelect').value;
+  updateLogo(selectedOEM);
   loadMap();
 }
 
-loadMap();
+// ======================
+// INIT
+// ======================
+updateMap();
+
 </script>
+
 </body>
 </html>
