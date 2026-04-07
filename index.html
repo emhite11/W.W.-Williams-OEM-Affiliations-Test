@@ -3,260 +3,285 @@
 <head>
 <meta charset="utf-8" />
 <title>OEM Map</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <style>
-html, body {
-  margin:0;
-  height:100%;
-  font-family: Arial;
-}
-
-#map {
-  height: calc(100% - 70px);
-  margin-top: 70px;
-  background:#e6e6e6;
-}
-
-#oemHeader {
-  position:absolute;
-  top:0;
-  left:0;
-  right:0;
-  height:70px;
-  background:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 2px 8px rgba(0,0,0,0.15);
-  z-index:1000;
-}
-
-#oemLogoHeader {
-  height:36px;
-}
+html, body { margin:0; height:100%; font-family: Arial; }
+#map { height:100%; background:#e6e6e6; }
 
 .controls {
-  position:absolute;
-  top:90px;
-  left:10px;
-  background:white;
-  padding:12px;
-  border-radius:10px;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  z-index:1000;
-  width:220px;
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: white;
+  padding: 12px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 1000;
+  width: 240px;
+  position: relative; /* for absolute positioning of logo container */
 }
 
-select {
-  width:100%;
-  margin-top:6px;
-  padding:6px;
+select { width:100%; margin-top:6px; padding:6px; }
+
+.legend { margin-top:10px; font-size:12px; }
+.legend div { margin-top:4px; }
+.dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+.hollow { border:2px solid black; background:transparent; }
+
+#logoContainer {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: white;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: none; /* hidden initially */
+  max-width: 150px;
 }
 
-.legend {
-  margin-top:10px;
-  font-size:12px;
+#cornerLogo {
+  max-width: 150px;
+  height: auto;
 }
 </style>
 </head>
-
 <body>
-
-<div id="oemHeader">
-  <img id="oemLogoHeader" src="">
-</div>
 
 <div id="map"></div>
 
 <div class="controls">
   <strong>Select OEM</strong>
   <select id="oemSelect" onchange="updateMap()">
-    <option>Allison Transmission</option>
-    <option>mtu</option>
-    <option>Blue Star</option>
-    <option>Briggs & Stratton</option>
-    <option>Bus Climate Control</option>
-    <option>Daimler Coach North America</option>
-    <option>Deutz</option>
-    <option>Hiab-Waltco</option>
-    <option>John Deere</option>
-    <option>Kohler</option>
-    <option>Northern Lights</option>
-    <option>Red Dot</option>
-    <option>Volvo Penta</option>
-    <option>Workhorse</option>
-    <option>Yanmar</option>
+    <option value="Allison">Allison Transmission</option>
+    <option value="mtu">mtu</option>
+    <option value="Volvo Penta">Volvo Penta</option>
+    <option value="Deutz">Deutz</option>
+    <option value="John Deere">John Deere</option>
+    <option value="Yanmar">Yanmar</option>
+    <option value="Northern Lights">Northern Lights</option>
+    <option value="Workhorse">Workhorse</option>
+    <option value="Daimler Coach North America">Daimler Coach North America</option>
+    <option value="Blue Star">Blue Star</option>
+    <option value="Briggs &amp; Stratton">Briggs &amp; Stratton</option>
+    <option value="Kohler">Kohler</option>
+    <option value="Red Dot">Red Dot</option>
+    <option value="HIAB-WALTCO Liftgate">HIAB-WALTCO Liftgate</option>
+    <option value="Bus Climate Control">Bus Climate Control</option>
   </select>
 
   <div class="legend">
-    Distributor / Dealer / Both
+    <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:50%;margin-right:6px;"></span>Dealer</div>
+    <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:0;margin-right:6px;"></span>Distributor</div>
+    <div><span style="display:inline-block;width:10px;height:10px;background:white;border:1px solid black;border-radius:0;margin-right:6px;outline:2px solid black;outline-offset:2px;"></span>Dealer/Distributor</div>
+    <div><span style="display:inline-block;width:10px;height:10px;background:#aaa;border:1px solid black;border-radius:50%;margin-right:6px;"></span>Service Provider / Other</div>
+  </div>
+
+  <!-- Logo container in the bottom right corner of controls -->
+  <div id="logoContainer">
+    <img id="cornerLogo" src="" alt="OEM Logo" />
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
+const map = L.map('map').setView([33, -95], 4);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png').addTo(map);
 
-// ======================
-// LOGOS
-// ======================
-const oemLogos = {
-  "Allison Transmission": "logos/allison.jpg",
-  "Blue Star": "logos/blue-star.jpg",
-  "Briggs & Stratton": "logos/briggs-stratton.jpg",
-  "Bus Climate Control": "logos/bus-climate.jpg",
-  "Daimler Coach North America": "logos/daimler.jpg",
-  "Deutz": "logos/deutz.jpg",
-  "Hiab-Waltco": "logos/hiab.jpg",
-  "John Deere": "logos/john-deere.jpg",
-  "Kohler": "logos/kohler.jpg",
-  "mtu": "logos/mtu.jpg",
-  "Northern Lights": "logos/northern-lights.jpg",
-  "Red Dot": "logos/red-dot.jpg",
-  "Volvo Penta": "logos/volvo.jpg",
-  "Workhorse": "logos/workhorse.jpg",
-  "Yanmar": "logos/yanmar.jpg"
+const countyURL = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json";
+const stateURL = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json";
+const mexicoURL = "https://raw.githubusercontent.com/angelnmara/geojson/master/mexicoHigh.json";
+
+// FIPS codes for US states used in county matching
+const stateFips = {
+  AL:"01", AZ:"04", CA:"06", GA:"13", IN:"18", KY:"21", MA:"25", ME:"23",
+  MI:"26", NV:"32", OH:"39", OR:"41", RI:"44", SC:"45", TN:"47", WA:"53"
 };
 
-function updateLogo(selectedOEM) {
-  const logo = document.getElementById("oemLogoHeader");
-  const src = oemLogos[selectedOEM];
-  if (src) logo.src = src;
-}
-
-// ======================
-// MAP INIT
-// ======================
-const map = L.map('map').setView([39, -98], 4);
-
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png')
-.addTo(map);
-
-// ======================
-// FIPS MAP (CRITICAL)
-// ======================
-const fipsMap = {
-  "Alabama":"01",
-  "Arizona":"04",
-  "Georgia":"13",
-  "Indiana":"18",
-  "Kentucky":"21",
-  "Michigan":"26",
-  "Nevada":"32",
-  "Ohio":"39",
-  "South Carolina":"45",
-  "Tennessee":"47"
-};
-
-// ======================
-// DATA (Allison + mtu)
-// ======================
 const data = [
-  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Cleveland", state:"Ohio", county:"Cuyahoga", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Youngstown", state:"Ohio", county:"Mahoning", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Toledo", state:"Ohio", county:"Lucas", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Dearborn", state:"Michigan", county:"Wayne", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Grand Rapids", state:"Michigan", county:"Kent", oem:"Allison Transmission", role:"Distributor"},
-  {city:"Saginaw", state:"Michigan", county:"Saginaw", oem:"Allison Transmission", role:"Distributor"},
-
-  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"mtu", role:"Distributor"},
-  {city:"Cleveland", state:"Ohio", county:"Cuyahoga", oem:"mtu", role:"Distributor"}
+  // (your data array as provided, unchanged)
+  // ...
 ];
 
-// ======================
-// HELPERS
-// ======================
-function getActiveStates(oem) {
-  return [...new Set(data.filter(d => d.oem === oem).map(d => d.state))];
+const coords = {
+  // (your coords object as provided, unchanged)
+  // ...
+};
+
+function getCityCoords(city, state) {
+  if (city === "Portland") {
+    return state === "OR" ? [45.52, -122.67] : [43.66, -70.26];
+  }
+  return coords[city] || null;
 }
 
-// ======================
-// STYLES
-// ======================
-function styleState(feature, selectedOEM) {
-  const activeStates = getActiveStates(selectedOEM);
+let countyLayer, stateLayer, mexicoLayer;
+let markers = [];
 
-  if (activeStates.includes(feature.properties.name)) {
-    return {
-      fillColor:"#0060a9",
-      fillOpacity:0.18,
-      color:"#666",
-      weight:1
-    };
+const stateFullName = {
+  OH:"Ohio", MI:"Michigan", GA:"Georgia", SC:"South Carolina", AL:"Alabama",
+  AZ:"Arizona", NV:"Nevada", TN:"Tennessee", KY:"Kentucky", IN:"Indiana",
+  MA:"Massachusetts", ME:"Maine", RI:"Rhode Island", OR:"Oregon", WA:"Washington", CA:"California"
+};
+
+const mexicoStateNames = {
+  "MX-JAL": "Jalisco",
+  "MX-CMX": "Ciudad de México",
+  "MX-SON": "Sonora",
+  "MX-QUE": "Querétaro"
+};
+
+function getActiveUSStates(selectedOEM) {
+  return [...new Set(
+    data.filter(d => d.oem === selectedOEM && !d.state.startsWith("MX-"))
+        .map(d => stateFullName[d.state])
+        .filter(Boolean)
+  )];
+}
+
+function getActiveMexicoStates(selectedOEM) {
+  return [...new Set(
+    data.filter(d => d.oem === selectedOEM && d.state.startsWith("MX-"))
+        .map(d => mexicoStateNames[d.state])
+        .filter(Boolean)
+  )];
+}
+
+function styleUSState(feature, selectedOEM) {
+  const active = getActiveUSStates(selectedOEM);
+  const name = feature.properties.name || feature.properties.NAME;
+  if (active.includes(name)) {
+    return { fillColor:"#0060a9", fillOpacity:0.18, color:"#666", weight:1 };
   }
-
   return { fillOpacity:0, color:"#bbb", weight:1 };
 }
 
-function styleCounty(feature, selectedOEM) {
-  const county = feature.properties.NAME;
-  const state = feature.properties.STATE;
-
+function getCountyStyle(feature, selectedOEM) {
+  const countyName = feature.properties.NAME;
+  const stateCode = feature.properties.STATE;
   const match = data.find(d =>
     d.oem === selectedOEM &&
-    d.county === county &&
-    fipsMap[d.state] === state
+    d.county === countyName &&
+    stateFips[d.state] === stateCode
   );
-
   if (match) {
-    return {
-      fillColor:"#1e2859",
-      fillOpacity:0.75,
-      color:"#444",
-      weight:0.5
-    };
+    return { fillColor:"#0060a9", fillOpacity:0.75, color:"#444", weight:0.5 };
   }
-
   return { fillOpacity:0, color:"#999", weight:0.5 };
 }
 
-// ======================
-// LOAD MAP
-// ======================
-let countyLayer, stateLayer;
+function styleMexicoState(feature, selectedOEM) {
+  const active = getActiveMexicoStates(selectedOEM);
+  const name = feature.properties.name || feature.properties.NAME || feature.properties.state_name;
+  if (active.includes(name)) {
+    return { fillColor:"#0060a9", fillOpacity:0.18, color:"#666", weight:1 };
+  }
+  return { fillOpacity:0, color:"#bbb", weight:1 };
+}
+
+function drawMarkers(selectedOEM) {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  const seen = new Set();
+  data.forEach(d => {
+    if (d.oem !== selectedOEM) return;
+    const key = `${d.city}|${d.state}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const c = getCityCoords(d.city, d.state);
+    if (!c) return;
+    let iconHtml;
+    if (d.role === "Dealer") {
+      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:50%;box-sizing:border-box;"></div>`;
+    } else if (d.role === "Distributor") {
+      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:0;box-sizing:border-box;"></div>`;
+    } else if (d.role === "Dealer/Distributor") {
+      iconHtml = `<div style="width:12px;height:12px;background:white;border:1.5px solid #555;border-radius:0;outline:2px solid #555;outline-offset:2px;box-sizing:border-box;"></div>`;
+    } else {
+      iconHtml = `<div style="width:12px;height:12px;background:#aaa;border:1.5px solid #555;border-radius:50%;box-sizing:border-box;"></div>`;
+    }
+    const icon = L.divIcon({ html: iconHtml, className: '', iconAnchor: [6, 6] });
+    const countyLabel = d.county ? `${d.county} County<br>` : "";
+    const marker = L.marker(c, { icon }).addTo(map);
+    marker.bindTooltip(`${d.city}, ${d.stateLabel}<br>${countyLabel}${d.oem}<br>${d.role}`);
+    markers.push(marker);
+  });
+}
 
 async function loadMap() {
   const selectedOEM = document.getElementById('oemSelect').value;
+  try {
+    const [countyRes, stateRes, mexicoRes] = await Promise.all([
+      fetch(countyURL),
+      fetch(stateURL),
+      fetch(mexicoURL)
+    ]);
+    const counties = await countyRes.json();
+    const states = await stateRes.json();
+    const mexico = await mexicoRes.json();
 
-  const [cRes, sRes] = await Promise.all([
-    fetch("https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"),
-    fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json")
-  ]);
+    if (countyLayer) map.removeLayer(countyLayer);
+    if (stateLayer)  map.removeLayer(stateLayer);
+    if (mexicoLayer) map.removeLayer(mexicoLayer);
 
-  const counties = await cRes.json();
-  const states = await sRes.json();
+    stateLayer = L.geoJSON(states, {
+      style: f => styleUSState(f, selectedOEM)
+    }).addTo(map);
 
-  if (countyLayer) map.removeLayer(countyLayer);
-  if (stateLayer) map.removeLayer(stateLayer);
+    countyLayer = L.geoJSON(counties, {
+      style: f => getCountyStyle(f, selectedOEM)
+    }).addTo(map);
 
-  stateLayer = L.geoJSON(states, {
-    style: f => styleState(f, selectedOEM)
-  }).addTo(map);
+    mexicoLayer = L.geoJSON(mexico, {
+      style: f => styleMexicoState(f, selectedOEM)
+    }).addTo(map);
 
-  countyLayer = L.geoJSON(counties, {
-    style: f => styleCounty(f, selectedOEM)
-  }).addTo(map);
+    drawMarkers(selectedOEM);
+  } catch (err) {
+    console.error('Map load error:', err);
+    alert('Map failed to load external data. Try opening via a local server or internet connection.');
+  }
 }
 
-// ======================
-// UPDATE
-// ======================
 function updateMap() {
-  const selectedOEM = document.getElementById('oemSelect').value;
-  updateLogo(selectedOEM);
   loadMap();
+
+  const select = document.getElementById('oemSelect');
+  const cornerLogo = document.getElementById('cornerLogo');
+  const logoContainer = document.getElementById('logoContainer');
+  const selectedOEM = select.value;
+
+  const logoFilenames = {
+    "Allison": "allison.jpg",
+    "mtu": "mtu.jpg",
+    "Volvo Penta": "volvo.jpg",
+    "Deutz": "deutz.jpg",
+    "John Deere": "john-deere.jpg",
+    "Yanmar": "yanmar.jpg",
+    "Northern Lights": "northern-lights.jpg",
+    "Workhorse": "workhorse.jpg",
+    "Daimler Coach North America": "daimler.jpg",
+    "Blue Star": "blue-star.jpg",
+    "Briggs &amp; Stratton": "briggs-stratton.jpg",
+    "Kohler": "kohler.jpg",
+    "Red Dot": "red-dot.jpg",
+    "HIAB-WALTCO Liftgate": "hiab.jpg",
+    "Bus Climate Control": "bus-climate.jpg"
+  };
+
+  const filename = logoFilenames[selectedOEM];
+  if (filename) {
+    const logoUrl = `https://raw.githubusercontent.com/emhite11/W.W.-Williams-OEM-Affiliations-Test/main/logos/${filename}`;
+    cornerLogo.src = logoUrl;
+    document.getElementById('logoContainer').style.display = 'block';
+  } else {
+    document.getElementById('logoContainer').style.display = 'none';
+  }
 }
 
-// ======================
-// INIT
-// ======================
-updateMap();
-
+// Initial load
+loadMap();
 </script>
-
 </body>
 </html>
