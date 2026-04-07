@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>OEM Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<style>
+html, body {
+  margin:0;
+  height:100%;
+  font-family: Arial;
+}
+
+#map {
+  height: calc(100% - 70px);
+  margin-top: 70px;
+  background:#e6e6e6;
+}
+
+/* Header */
+#oemHeader {
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:70px;
+  background:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
+  z-index:1000;
+}
+
+#oemLogoHeader {
+  height:36px;
+  object-fit:contain;
+}
+
+/* Controls */
+.controls {
+  position:absolute;
+  top:90px;
+  left:10px;
+  background:white;
+  padding:12px;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  z-index:1000;
+  width:220px;
+}
+
+select {
+  width:100%;
+  margin-top:6px;
+  padding:6px;
+}
+
+.legend {
+  margin-top:10px;
+  font-size:12px;
+}
+
+.dot {
+  display:inline-block;
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  margin-right:6px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- HEADER -->
+<div id="oemHeader">
+  <img id="oemLogoHeader" src="" />
+</div>
+
+<!-- MAP -->
+<div id="map"></div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <strong>Select OEM</strong>
+  <select id="oemSelect" onchange="updateMap()">
+    <option>Allison Transmission</option>
+    <option>mtu</option>
+    <option>Blue Star</option>
+    <option>Briggs & Stratton</option>
+    <option>Bus Climate Control</option>
+    <option>Daimler Coach North America</option>
+    <option>Deutz</option>
+    <option>Hiab-Waltco</option>
+    <option>John Deere</option>
+    <option>Kohler</option>
+    <option>Northern Lights</option>
+    <option>Red Dot</option>
+    <option>Volvo Penta</option>
+    <option>Workhorse</option>
+    <option>Yanmar</option>
+  </select>
+
+  <div class="legend">
+    <div><span class="dot" style="background:white; border:1px solid black"></span>Distributor</div>
+    <div><span class="dot" style="background:transparent; border:2px solid black"></span>Dealer</div>
+    <div><span class="dot" style="background:white; border:2px solid black"></span>Both</div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+// ======================
+// LOGOS
+// ======================
+const oemLogos = {
+  "Allison Transmission": "logos/allison.jpg",
+  "Blue Star": "logos/blue-star.jpg",
+  "Briggs & Stratton": "logos/briggs-stratton.jpg",
+  "Bus Climate Control": "logos/bus-climate.jpg",
+  "Daimler Coach North America": "logos/daimler.jpg",
+  "Deutz": "logos/deutz.jpg",
+  "Hiab-Waltco": "logos/hiab.jpg",
+  "John Deere": "logos/john-deere.jpg",
+  "Kohler": "logos/kohler.jpg",
+  "mtu": "logos/mtu.jpg",
+  "Northern Lights": "logos/northern-lights.jpg",
+  "Red Dot": "logos/red-dot.jpg",
+  "Volvo Penta": "logos/volvo.jpg",
+  "Workhorse": "logos/workhorse.jpg",
+  "Yanmar": "logos/yanmar.jpg"
+};
+
+function updateLogo(selectedOEM) {
+  const logo = document.getElementById("oemLogoHeader");
+  const src = oemLogos[selectedOEM];
+
+  if (src) {
+    logo.src = src;
+  }
+}
+
+// ======================
+// MAP INIT
+// ======================
+const map = L.map('map').setView([39, -98], 4);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png')
+.addTo(map);
+
+// ======================
+// DATA (sample - expand later)
+// ======================
+const data = [
+  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Cleveland", state:"Ohio", county:"Cuyahoga", oem:"Allison Transmission", role:"Distributor"},
+  {city:"Columbus", state:"Ohio", county:"Franklin", oem:"mtu", role:"Distributor"}
+];
+
+// coords
+const coords = {
+  Columbus:[39.96,-83],
+  Cleveland:[41.49,-81.69]
+};
+
+// ======================
+// STATE MATCH
+// ======================
+function getActiveStates(selectedOEM) {
+  return [...new Set(data
+    .filter(d => d.oem === selectedOEM)
+    .map(d => d.state))];
+}
+
+// ======================
+// LAYERS
+// ======================
+let countyLayer;
+let stateLayer;
+let markers = [];
+
+const countyURL = "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json";
+const stateURL = "https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-states.json";
+
+// ======================
+// STYLES
+// ======================
+function styleState(feature, selectedOEM) {
+  const activeStates = getActiveStates(selectedOEM);
+
+  if (activeStates.includes(feature.properties.name)) {
+    return {
+      fillColor:"#0060a9",
+      fillOpacity:0.18,
+      color:"#666",
+      weight:1
+    };
+  }
+
+  return {
+    fillOpacity:0,
+    color:"#bbb",
+    weight:1
+  };
+}
+
+function styleCounty(feature, selectedOEM) {
+  const countyName = feature.properties.NAME;
+
+  const match = data.find(d =>
+    d.oem === selectedOEM &&
+    d.county === countyName
+  );
+
+  if (match) {
+    return {
+      fillColor:"#1e2859",
+      fillOpacity:0.75,
+      color:"#444",
+      weight:0.5
+    };
+  }
+
+  return {
+    fillOpacity:0,
+    color:"#999",
+    weight:0.5
+  };
+}
+
+// ======================
+// MARKERS
+// ======================
+function drawMarkers(selectedOEM) {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+
+  data.forEach(d => {
+    if (d.oem !== selectedOEM) return;
+
+    const c = coords[d.city];
+    if (!c) return;
+
+    let style = { radius:6, color:"white", fillColor:"white", fillOpacity:1 };
+
+    if (d.role === "Dealer") {
+      style = { radius:6, color:"white", fillOpacity:0 };
+    }
+
+    const marker = L.circleMarker(c, style).addTo(map);
+
+    marker.bindTooltip(
+      `${d.city}, ${d.state}<br>${d.county} County<br>${d.oem}<br>${d.role}`
+    );
+
+    markers.push(marker);
+  });
+}
+
+// ======================
+// LOAD MAP
+// ======================
+async function loadMap() {
+  const selectedOEM = document.getElementById('oemSelect').value;
+
+  const [countyRes, stateRes] = await Promise.all([
+    fetch(countyURL),
+    fetch(stateURL)
+  ]);
+
+  const counties = await countyRes.json();
+  const states = await stateRes.json();
+
+  if (countyLayer) map.removeLayer(countyLayer);
+  if (stateLayer) map.removeLayer(stateLayer);
+
+  stateLayer = L.geoJSON(states, {
+    style: f => styleState(f, selectedOEM)
+  }).addTo(map);
+
+  countyLayer = L.geoJSON(counties, {
+    style: f => styleCounty(f, selectedOEM)
+  }).addTo(map);
+
+  drawMarkers(selectedOEM);
+}
+
+// ======================
+// UPDATE
+// ======================
+function updateMap() {
+  const selectedOEM = document.getElementById('oemSelect').value;
+  updateLogo(selectedOEM);
+  loadMap();
+}
+
+// ======================
+// INIT
+// ======================
+updateLogo(document.getElementById('oemSelect').value);
+loadMap();
+
+</script>
+
+</body>
+</html>
